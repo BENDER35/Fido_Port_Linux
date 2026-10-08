@@ -56,7 +56,14 @@ the actual download links, for all the architectures available for that language
 Requirements
 ------------
 
-Windows 8 or later with PowerShell. Windows 7 is __not__ supported.
+* **Windows**: Windows 8 or later with Windows PowerShell 5.1 or later. Windows 7 is __not__ supported.
+  Both the graphical UI and the command line mode are available.
+* **Linux / macOS**: PowerShell 7 or later (`pwsh`) - see [Installing PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux)
+  or [on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+  Only the command line mode is available, since the graphical UI relies on WPF, which is Windows-only.
+
+Technical documentation (English/Spanish): [docs/TECHNICAL_DOC_EN.md](docs/TECHNICAL_DOC_EN.md) -
+[docs/TECHNICAL_DOC_ES.md](docs/TECHNICAL_DOC_ES.md).
 
 Commandline mode
 ----------------
@@ -118,6 +125,61 @@ Please select a Windows Release (-Rel) for Windows 10 (or use 'Latest' for most 
 PS C:\Projects\Fido> .\Fido.ps1 -Win 10 -Rel 20H2 -Ed Edu -Lang Fre -Arch x86 -GetUrl
 https://software-download.microsoft.com/db/Win10_Edu_20H2_v2_French_x32.iso?t=c48b32d3-4cf3-46f3-a8ad-6dd9568ff4eb&e=1629113408&h=659cdd60399584c5dc1d267957924fbd
 ```
+
+Running on Linux and macOS
+---------------------------
+
+The script runs under PowerShell 7+ (`pwsh`), but only in **command line mode**, because the
+graphical interface depends on WPF (`PresentationFramework`), which Microsoft does not provide outside of
+Windows. Invoking the script without any of the command line options on Linux/macOS will therefore print a
+short usage message and exit with code `403`.
+
+Typical usage:
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install -y wget gpg
+wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb && rm packages-microsoft-prod.deb
+sudo apt-get update && sudo apt-get install -y powershell
+
+# Fedora
+sudo dnf install -y powershell
+
+# Arch
+yay -S powershell-bin
+
+# macOS
+brew install --cask powershell
+
+# List the available Windows versions
+pwsh ./Fido.ps1 -Win List
+
+# Only print the direct download URL (no download)
+pwsh ./Fido.ps1 -Win 11 -Rel Latest -Ed Pro -Lang English -Arch x64 -GetUrl
+
+# Download the ISO into the current directory
+pwsh ./Fido.ps1 -Win 11 -Rel Latest -Ed Pro -Lang English -Arch x64
+```
+
+Notes about the Linux/macOS port:
+
+* **Architecture detection**: WMI/CIM (`Get-CimInstance Win32_Processor`) does not exist outside of
+  Windows, so the native CPU architecture is read from
+  `[System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture`. You may still force it with
+  `-PlatformArch x64|x86|ARM64` if you want to skip the detection.
+* **Downloads**: `Start-BitsTransfer` (BITS) is a Windows-only technology. When it is not available the
+  script falls back to `Invoke-WebRequest -OutFile`, which is what happens on Linux/macOS.
+* **TLS**: the forced TLS 1.0/1.1/1.2 workaround for Windows 8.x is only applied on Windows hosts;
+  PowerShell 7 already defaults to TLS 1.2 or later everywhere else.
+* **Authenticode signature**: the upstream script is Authenticode signed for Windows. The signature
+  block was removed by this port, as it would otherwise be reported as invalid as soon as the script
+  is modified.
+* **Microsoft IP blocks**: Microsoft may temporarily refuse to hand out ISO links from your IP address
+  (errors such as `Sentinel marked this request as rejected.` or code `715-123130`). This is a
+  Microsoft-side, IP-based restriction that also affects browsers and other download tools: wait a
+  while, switch to another network, or download the ISO manually from
+  https://www.microsoft.com/software-download
 
 Additional Notes
 ----------------
