@@ -4,7 +4,8 @@ This document describes how `Fido.ps1` works internally and which changes were a
 to PowerShell 7 (`pwsh`) on Linux and macOS.
 
 * Spanish version: [TECHNICAL_DOC_ES.md](TECHNICAL_DOC_ES.md)
-* Script: [`../Fido.ps1`](../Fido.ps1)
+* README: [../README.md](../README.md) (English) - [../README.es.md](../README.es.md) (Español)
+* Script: [`../Fido.ps1`](../Fido.ps1) - build/signing script: [`../sign.sh`](../sign.sh)
 * License: GPLv3 or later
 
 ---
@@ -265,3 +266,59 @@ pwsh -NoProfile -File ./Fido.ps1 -Win "UEFI Shell 2.2" -Rel Latest -Ed Release -
                                                       → 21 MB ISO downloaded and verified (exit 0)
 [System.Management.Automation.Language.Parser]::ParseFile(...) → no syntax errors
 ```
+
+---
+
+## 10. Release signing (`sign.sh`)
+
+Rufus does not fetch `Fido.ps1` directly, but a compressed copy of it: `Fido.ps1.lzma`, shipped together with an
+RSA signature `Fido.ps1.lzma.sig` that lets it detect a tampered script. `sign.sh` is the build script that
+produces both artefacts.
+
+### 10.1 What it does, in order
+
+1. **Authenticode** signature of `Fido.ps1` with the Windows SDK `signtool` (default path
+   `C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool`), the certificate identified by the
+   SHA-1 thumbprint `fc4686753937a93fdcd48c2bb4375e239af92dcb`, and a DigiCert RFC 3161 timestamp. Windows only.
+2. Reads the pass phrase of the private key (`read -s`) and validates it with
+   `openssl pkey -in <key> -passin pass:<phrase> -noout` *before* any file is modified.
+3. Compresses the script with `lzma -kf Fido.ps1` and inserts the **uncompressed size as a 64-bit little endian
+   value at offset 5** of `Fido.ps1.lzma` - the standard `.lzma` header is 5 parameter bytes followed by an
+   8-byte size field, which `lzma` does not know how to fill - using the `printf | xxd | tac | xxd | dd seek=5`
+   pipeline, and then reads the field back with `od -An -tu8 -j5 -N8` to make sure the value Rufus will read is
+   the right one.
+4. `openssl dgst -sha256 -sign` produces `Fido.ps1.lzma.sig`, which is then checked with
+   `openssl dgst -sha256 -verify` and the public key. An existing signature that still verifies is left
+   untouched (idempotent); a missing or stale one is refreshed.
+
+Environment variables: `PRIVATE_KEY`, `PUBLIC_KEY` (key paths, Windows defaults), `SIGNTOOL` (signtool location)
+and `SHA1_THUMBPRINT` (certificate). `*.sig` and `*.lzma` are build artefacts ignored by git.
+
+### 10.2 Linux port of `sign.sh`
+
+| Problem in the original script | Fix |
+|--------------------------------|-----|
+| Keys hardcoded to MSYS paths (`/d/Secured/Akeo/Rufus/*.pem`) with no way to override | `PRIVATE_KEY` / `PUBLIC_KEY` environment variables, plus an existence check that reports an explicit error |
+| `signtool` invoked unconditionally → `command not found` on Linux | the step only runs when the configured path exists or, on MSYS/Cygwin, when `signtool` is on `$PATH`; otherwise it is skipped with a notice. The unrelated `signtool` found in `/usr/bin` on Linux is never picked up |
+| `realpath` of a non-existent key printed an error before failing anyway | keys are validated first and only then resolved with `realpath` |
+| No error handling at all (no `set -e`), an unused `$SIZE` variable and unquoted expansions | `set -euo pipefail`, quoted variables, dead code removed |
+| GNU-only `stat -c%s` / `stat -c "%s"` | `file_size()` helper with GNU and BSD (`stat -f %z`) fallbacks |
+| Overwriting the password with random data through a pipe could abort the script under `pipefail` (SIGPIPE) | the password is cleared with `unset PASSWORD` |
+| Neither the size patch nor the signature were ever verified | read-back check of the size field (script aborts on mismatch) and `openssl dgst -verify` after every signing |
+| The pass phrase was requested *after* a `signtool` call that could already have failed | new order: key checks → Authenticode (if available) → pass phrase → compress → patch size → sign → verify |
+
+### 10.3 Verification performed
+
+```text
+bash -n sign.sh                                           → sintaxis OK
+./sign.sh (default keys missing)                          → "private key ... not found", exit 1
+./sign.sh PRIVATE_KEY=... PUBLIC_KEY=... (pass phrase OK) → signtool skipped, signature created and verified, exit 0
+./sign.sh (second run)                                    → "already up to date", exit 0
+./sign.sh (wrong pass phrase)                             → "Invalid pass phrase", exit 1
+./sign.sh (signature corrupted - 8 bytes zeroed)          → "Updating signature" + "Verified OK"
+lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → identical (41384 bytes)
+size field at offset 5 == stat -c%s Fido.ps1              → 41384 == 41384
+```
+
+The Authenticode step could only be verified as *skipped* here, since it needs Windows, the Windows SDK and the
+Akeo EV certificate.

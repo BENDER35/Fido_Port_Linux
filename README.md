@@ -4,6 +4,8 @@ Fido: A PowerShell script to download Windows and UEFI Shell ISOs
 [![Licence](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 [![Github stats](https://img.shields.io/github/downloads/pbatard/Fido/total.svg?style=flat-square)](https://github.com/pbatard/Fido/releases)
 
+**English** | [Español](README.es.md)
+
 Description
 -----------
 
@@ -180,6 +182,32 @@ Notes about the Linux/macOS port:
   Microsoft-side, IP-based restriction that also affects browsers and other download tools: wait a
   while, switch to another network, or download the ISO manually from
   https://www.microsoft.com/software-download
+
+Release signing (sign.sh)
+-------------------------
+
+`sign.sh` produces the LZMA payload that Rufus fetches (`Fido.ps1.lzma`) together with its RSA
+signature (`Fido.ps1.lzma.sig`). It runs on Linux and on MSYS2/Git Bash:
+
+```bash
+# The default key paths are Windows ones, so point the script at the keys when on Linux
+PRIVATE_KEY=/path/to/private.pem PUBLIC_KEY=/path/to/public.pem ./sign.sh
+```
+
+What it does, in order:
+
+1. **Authenticode** signature of `Fido.ps1`, using the Windows SDK `signtool` and the Akeo EV
+   certificate. This step needs Windows, and is skipped with a notice when `signtool` is not
+   available (a random `signtool` from `$PATH` on Linux is never picked up).
+2. Prompts for the pass phrase of the private key and validates it before touching any file.
+3. Compresses `Fido.ps1` with `lzma` and inserts the 64-bit little endian uncompressed size at
+   offset 5, which is what the Rufus LZMA decoder expects, then reads that value back to check it.
+4. Creates - or refreshes, when the existing one is missing or stale - the RSA-SHA256 signature
+   `Fido.ps1.lzma.sig` and verifies it with the public key.
+
+Both `*.sig` and `*.lzma` are build artefacts and are ignored by git. The key paths, the `signtool`
+location and the certificate thumbprint can be overridden with the `PRIVATE_KEY`, `PUBLIC_KEY`,
+`SIGNTOOL` and `SHA1_THUMBPRINT` environment variables.
 
 Additional Notes
 ----------------
