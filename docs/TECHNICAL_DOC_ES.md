@@ -328,8 +328,8 @@ bash -n sign.sh                                           → sintaxis OK
 ./sign.sh (segunda ejecución)                             → "already up to date", exit 0
 ./sign.sh (frase de paso incorrecta)                      → "Invalid pass phrase", exit 1
 ./sign.sh (firma corrupta - 8 bytes a cero)               → "Updating signature" + "Verified OK"
-lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → idéntico (41433 bytes)
-campo de tamaño en offset 5 == stat -c%s Fido.ps1         → 41433 == 41433
+lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → idéntico (41431 bytes)
+campo de tamaño en offset 5 == stat -c%s Fido.ps1         → 41431 == 41431
 ```
 
 El paso de Authenticode solo se pudo verificar como *omitido* aquí, ya que requiere Windows, el Windows SDK y el

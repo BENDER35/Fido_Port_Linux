@@ -2,7 +2,7 @@
 #
 # Creates an LZMA compressed Fido.ps1 (including decompressed size) and sign it
 #
-# port a linux por IA by BENDER (bajo opencode)
+# Linux port by AI by BENDER (under opencode)
 #
 # This script runs on Linux as well as on MSYS2/Git Bash on Windows:
 #

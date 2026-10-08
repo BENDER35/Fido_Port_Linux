@@ -2,7 +2,7 @@
 # Fido v1.71 - ISO Downloader, for Microsoft Windows, Linux and UEFI Shell
 # Copyright © 2019-2026 Pete Batard <pete@akeo.ie>
 # Linux/macOS port: the script now also runs under PowerShell 7+ (pwsh)
-# port a linux por IA by BENDER (bajo opencode)
+# Linux port by AI by BENDER (under opencode)
 # Command line support: Copyright © 2021 flx5
 # ConvertTo-ImageSource: Copyright © 2016 Chris Carter
 #

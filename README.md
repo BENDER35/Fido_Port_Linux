@@ -6,7 +6,7 @@ Fido: A PowerShell script to download Windows and UEFI Shell ISOs
 
 **English** | [Español](README.es.md)
 
-port a linux por IA by BENDER (bajo opencode)
+Linux port by AI by BENDER (under opencode)
 
 Description
 -----------
