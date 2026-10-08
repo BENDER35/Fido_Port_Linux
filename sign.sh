@@ -2,6 +2,8 @@
 #
 # Creates an LZMA compressed Fido.ps1 (including decompressed size) and sign it
 #
+# port a linux por IA by BENDER (bajo opencode)
+#
 # This script runs on Linux as well as on MSYS2/Git Bash on Windows:
 #
 #   * The RSA signature of the LZMA payload (Fido.ps1.lzma.sig) is created with openssl.

@@ -7,6 +7,7 @@ PowerShell 7 (`pwsh`) en Linux y macOS.
 * README: [../README.es.md](../README.es.md) (Español) - [../README.md](../README.md) (English)
 * Script: [`../Fido.ps1`](../Fido.ps1) - script de compilación/firma: [`../sign.sh`](../sign.sh)
 * Licencia: GPLv3 o posterior
+* Port: port a linux por IA by BENDER (bajo opencode)
 
 ---
 
@@ -327,8 +328,8 @@ bash -n sign.sh                                           → sintaxis OK
 ./sign.sh (segunda ejecución)                             → "already up to date", exit 0
 ./sign.sh (frase de paso incorrecta)                      → "Invalid pass phrase", exit 1
 ./sign.sh (firma corrupta - 8 bytes a cero)               → "Updating signature" + "Verified OK"
-lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → idéntico (41384 bytes)
-campo de tamaño en offset 5 == stat -c%s Fido.ps1         → 41384 == 41384
+lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → idéntico (41433 bytes)
+campo de tamaño en offset 5 == stat -c%s Fido.ps1         → 41433 == 41433
 ```
 
 El paso de Authenticode solo se pudo verificar como *omitido* aquí, ya que requiere Windows, el Windows SDK y el

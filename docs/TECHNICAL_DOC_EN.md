@@ -7,6 +7,7 @@ to PowerShell 7 (`pwsh`) on Linux and macOS.
 * README: [../README.md](../README.md) (English) - [../README.es.md](../README.es.md) (Español)
 * Script: [`../Fido.ps1`](../Fido.ps1) - build/signing script: [`../sign.sh`](../sign.sh)
 * License: GPLv3 or later
+* Port: port a linux por IA by BENDER (bajo opencode)
 
 ---
 
@@ -316,8 +317,8 @@ bash -n sign.sh                                           → sintaxis OK
 ./sign.sh (second run)                                    → "already up to date", exit 0
 ./sign.sh (wrong pass phrase)                             → "Invalid pass phrase", exit 1
 ./sign.sh (signature corrupted - 8 bytes zeroed)          → "Updating signature" + "Verified OK"
-lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → identical (41384 bytes)
-size field at offset 5 == stat -c%s Fido.ps1              → 41384 == 41384
+lzma -dc Fido.ps1.lzma | cmp - Fido.ps1                   → identical (41433 bytes)
+size field at offset 5 == stat -c%s Fido.ps1              → 41433 == 41433
 ```
 
 The Authenticode step could only be verified as *skipped* here, since it needs Windows, the Windows SDK and the
